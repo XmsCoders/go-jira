@@ -3,6 +3,7 @@ package jira
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,6 +61,21 @@ func NewClient(httpClient *http.Client, baseURL string) (*Client, error) {
 	c.Sprint = &SprintService{client: c}
 	c.User = &UserService{client: c}
 
+	return c, nil
+}
+
+func NewAuthenticatedClient(httpClient *http.Client, baseURL, user, password string) (*Client, error) {
+	c, err := NewClient(httpClient, baseURL)
+	if err != nil {
+		return nil, err
+	}
+	ok, err := c.Authentication.AcquireSessionCookie(user, password)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("Could not authenticate with provided credentials")
+	}
 	return c, nil
 }
 
